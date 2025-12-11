@@ -1,5 +1,6 @@
 import express, {   Request, Response } from "express";
 import initDB from "./config/db";
+import { userRouter } from "./moddules/users/user.routes";
  
 
 
@@ -13,6 +14,10 @@ app.use(express.json());
 //initializing db
 initDB()
 
+//users CRUD
+
+app.use("/api/v1/users",userRouter)
+ 
  
 
  
