@@ -1,6 +1,7 @@
 import express, {   Request, Response } from "express";
 import initDB from "./config/db";
 import { userRouter } from "./moddules/users/user.routes";
+import { vehiclesRouter } from "./moddules/vehicles/vehicles.routers";
  
 
 
@@ -19,7 +20,7 @@ initDB()
 app.use("/api/v1/users",userRouter)
  
  
-
+app.use("/api/v1/vehicles",vehiclesRouter)
  
 
 
