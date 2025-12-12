@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import {   Request, Response } from "express";
 import { vahiclesServices } from "./vihicles.service";
 
 const creatvehicles=async(req:Request,res:Response)=>{
@@ -17,6 +17,107 @@ res.status(200).json({
     }
 }
 
+
+
+// get vehicles 
+const getVehicles= async(req:Request,res:Response)=>{
+    
+    try{
+        const result = await vahiclesServices.getVehicles()
+       res.status(200).json({
+         success:true,
+         message:'vehicles get succesfully',
+         data:result.rows
+     })
+    }catch(err:any){
+          res.status(500).json({
+            success:false,
+            message:err.message
+        })
+    }
+}
+
+// get single vehicles 
+const singleVehicles = async(req:Request,res:Response)=>{
+    try{
+        const result = await vahiclesServices.singleVehicles(req.params.id!)
+          if(result.rows.length ===0){
+            res.status(404).json({
+                success:false,
+                message:'user not found'
+            }) 
+        }else{
+              res.status(200).json({
+                success:true,
+                message:'user fetched successfully',
+                data:result.rows[0]
+            })
+        }
+    }
+    
+    catch(err:any){
+          res.status(500).json({
+            success:false,
+            message:err.message,
+        })
+    }
+}
+
+// vehiclesUpdated 
+const updateVehicles =async(req:Request, res:Response)=>{
+     try{
+        const result = await vahiclesServices.updateVehicles(req.body)
+
+        if(result.rows.length===0){
+            res.status(400).json({
+                 success:false,
+                 message:'vehicles not found'
+            })
+        }else{
+               res.status(200).json({
+                 success:true,
+                 message:'user updated successfully',
+                 data:result.rows[0]
+             }) 
+        }
+     }catch(err:any){
+         res.status(500).json({
+             success:false,
+             message:err.message,
+         })
+     }
+}
+
+// delet vehicles 
+const deletvahicles=async(req:Request,res:Response)=>{
+    const {id}=req.params;
+    try{
+        const result = await vahiclesServices.deletvahicles(id!)
+    
+    if(result.rows.length===0){
+         res.status(404).json({
+                 success:false,
+                 message:'user not found'
+             }) 
+    }else{
+        res.status(200).json({
+                 success:true,
+                 message:'user delete successfully',
+                 data:result.rows
+             }) 
+    }
+    }catch(err:any){
+         res.status(500).json({
+             success:false,
+             message:err.message,
+         })
+    }
+}
+
 export const vehiclesControllers={
-    creatvehicles
+    creatvehicles,
+    getVehicles,
+    singleVehicles,
+    updateVehicles,
+    deletvahicles,
 }

@@ -32,12 +32,10 @@ const singleVehicles = async(id:string)=>{
 const updateVehicles = async(paylod:Record<string,unknown>)=>{
     const {vehicle_name,type,registration_number,availability_status,updated_at,id} = paylod;
     const result = await pool.query(`UPDATE vehicles SET  vehicle_name = $1,
-        type = $2,
-        registration_number = $3,
+        type = $2,  
         daily_rent_price = $4,
         availability_status = $5,
         updated_at = NOW()
-      WHERE id = $6
       RETURNING *;`,[vehicle_name,type,registration_number, availability_status,  updated_at, id])
       return result;
 }
