@@ -65,8 +65,12 @@ const singleVehicles = async(req:Request,res:Response)=>{
 
 // vehiclesUpdated 
 const updateVehicles =async(req:Request, res:Response)=>{
+     const payload = {
+      ...req.body,
+      id: req.params.id, // <-- এখানে id পাঠানো বাধ্যতামূলক
+    };
      try{
-        const result = await vahiclesServices.updateVehicles(req.body)
+        const result = await vahiclesServices.updateVehicles(payload)
 
         if(result.rows.length===0){
             res.status(400).json({
@@ -76,7 +80,7 @@ const updateVehicles =async(req:Request, res:Response)=>{
         }else{
                res.status(200).json({
                  success:true,
-                 message:'user updated successfully',
+                 message:'vehicles updated successfully',
                  data:result.rows[0]
              }) 
         }
@@ -94,15 +98,15 @@ const deletvahicles=async(req:Request,res:Response)=>{
     try{
         const result = await vahiclesServices.deletvahicles(id!)
     
-    if(result.rows.length===0){
+    if(result.rowCount==0){
          res.status(404).json({
                  success:false,
-                 message:'user not found'
+                 message:'vehicles not found'
              }) 
     }else{
         res.status(200).json({
                  success:true,
-                 message:'user delete successfully',
+                 message:'vehicles delete successfully',
                  data:result.rows
              }) 
     }
