@@ -19,7 +19,7 @@ initDB()
 
 app.use("/api/v1/users",userRouter)
  
- 
+//  vehicles crud 
 app.use("/api/v1/vehicles",vehiclesRouter)
  
 

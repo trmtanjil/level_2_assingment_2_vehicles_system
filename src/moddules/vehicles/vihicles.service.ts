@@ -20,7 +20,7 @@ const creatVihicles = async (payload:Record<string,unknown>)=>{
 }
 
 const getVehicles = async()=>{
-    const result= await pool.query(`SELECT * FROM vahicles`);
+    const result= await pool.query(`SELECT * FROM vehicles`);
     return result;
 
 }
