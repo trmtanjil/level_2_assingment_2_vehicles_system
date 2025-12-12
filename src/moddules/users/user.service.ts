@@ -3,6 +3,7 @@ import { pool } from "../../config/db";
 
 const creatUser = async(payload:Record<string,unknown>)=>{
     const {name, role, email,password,phone}= payload;
+    console.log(payload.user_id)
     const hashPass = await bcrypt.hash(password as string,10)
 
   const result = await pool.query(
