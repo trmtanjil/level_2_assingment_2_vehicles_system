@@ -43,10 +43,16 @@ const updateVehicles = async(paylod:Record<string,unknown>)=>{
 
 
 const deletvahicles= async(id:string)=>{
+  const checkVehicle = await pool.query('Select * from vehicles where id=$1', [id]);
+  if(!checkVehicle){
+    console.log("vehicles not found")
+  }
+  if(checkVehicle.rows[0].availability_status === 'available'){
     const result = await pool.query(`DELETE FROM vehicles WHERE id=$1 `,[id])
+    
     return result
+  }
 }
-
 export const vahiclesServices={
   creatVihicles,
   getVehicles,

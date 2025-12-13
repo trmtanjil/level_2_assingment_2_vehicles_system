@@ -98,7 +98,7 @@ const deletvahicles=async(req:Request,res:Response)=>{
     try{
         const result = await vahiclesServices.deletvahicles(id!)
     
-    if(result.rowCount==0){
+    if(result?.rows.length==0){
          res.status(404).json({
                  success:false,
                  message:'vehicles not found'
@@ -107,13 +107,13 @@ const deletvahicles=async(req:Request,res:Response)=>{
         res.status(200).json({
                  success:true,
                  message:'vehicles delete successfully',
-                 data:result.rows
+                 data:result
              }) 
     }
     }catch(err:any){
          res.status(500).json({
              success:false,
-             message:err.message,
+             message:err,
          })
     }
 }
