@@ -1,108 +1,77 @@
 import { pool } from "../../config/db";
 
-// Create Booking
-export const createBooking = async (payload: Record<string, any>) => {
-  const { customer_id, vehicle_id, rent_start_date, rent_end_date } = payload;
-
-  // 1️⃣ Validate vehicle availability
-  const vehicle = await pool.query(
-    `SELECT * FROM vehicles WHERE id=$1`,
-    [vehicle_id]
-  );
-
-  if (!vehicle.rows[0]) throw new Error("Vehicle not found");
-  if (vehicle.rows[0].availability_status === "booked")
-    throw new Error("Vehicle not available");
-
-  // 2️⃣ Validate date
-  if (new Date(rent_end_date) <= new Date(rent_start_date))
-    throw new Error("rent_end_date must be after rent_start_date");
-
-  // 3️⃣ Calculate total price
-  const start = new Date(rent_start_date);
-  const end = new Date(rent_end_date);
-  const days = Math.ceil(
-    (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
-  );
-  const total_price = days * parseFloat(vehicle.rows[0].daily_rent_price);
-
-  // 4️⃣ Insert booking
-  const booking = await pool.query(
-    `
-    INSERT INTO bookings
-      (customer_id, vehicle_id, rent_start_date, rent_end_date, total_price, status)
-    VALUES ($1,$2,$3,$4,$5,'active')
-    RETURNING *`,
-    [customer_id, vehicle_id, rent_start_date, rent_end_date, total_price]
-  );
-
-  // 5️⃣ Update vehicle status
-  await pool.query(
-    `UPDATE vehicles SET availability_status='booked', updated_at=NOW() WHERE id=$1`,
-    [vehicle_id]
-  );
-
-  return booking.rows[0];
-};
-
-// Get All Bookings (Admin or Customer)
-export const getBookings = async (user: any) => {
-  if (user.role === "admin") {
-    const result = await pool.query(`SELECT * FROM bookings`);
-    return result.rows;
-  } else {
-    const result = await pool.query(
-      `SELECT * FROM bookings WHERE customer_id=$1`,
-      [user.id]
-    );
-    return result.rows;
-  }
-};
-
-// Get Single Booking
-export const getSingleBooking = async (id: string) => {
-  const result = await pool.query(`SELECT * FROM bookings WHERE id=$1`, [id]);
-  return result.rows[0];
-};
-
-// Update Booking Status (Cancel / Return)
-export const updateBookingStatus = async (
-  bookingId: string,
-  status: "cancelled" | "returned"
+// Booking service
+const createBooking = async (
+  user: any,
+  vehicleId: number,
+  start: string,
+  end: string
 ) => {
-  const booking = await pool.query(`SELECT * FROM bookings WHERE id=$1`, [
-    bookingId,
-  ]);
+  // Vehicle check
+  const vehicleRes = await pool.query(
+    `SELECT * FROM vehicles WHERE id=$1`,
+    [vehicleId]
+  );
 
-  if (!booking.rows[0]) throw new Error("Booking not found");
-
-  // If cancelling, must be before start date
-  if (status === "cancelled" && new Date() >= new Date(booking.rows[0].rent_start_date)) {
-    throw new Error("Cannot cancel booking after start date");
+  if (vehicleRes.rows.length === 0) {
+    throw new Error("Vehicle not found");
   }
 
-  // Update booking status
-  const updatedBooking = await pool.query(
-    `UPDATE bookings SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING *`,
-    [status, bookingId]
+  const vehicle = vehicleRes.rows[0];
+console.log(vehicle)
+  // Safety: status check
+  if (!vehicle.availability_status) {
+    throw new Error("Vehicle status undefined");
+  }
+
+  //  Date validation
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+    throw new Error("Invalid start or end date");
+  }
+
+  if (endDate <= startDate) {
+    throw new Error("End date must be after start date");
+  }
+
+  //  Check overlapping bookings
+  const overlapRes = await pool.query(
+    `
+    SELECT * FROM bookings
+    WHERE vehicle_id=$1
+      AND status='active'
+      AND NOT ($2 > rent_end_date OR $3 < rent_start_date)
+    `,
+    [vehicleId, startDate.toISOString(), endDate.toISOString()]
   );
 
-  // If cancelled or returned → update vehicle availability
+  if (overlapRes.rows.length > 0) {
+    throw new Error("Vehicle not available for selected dates");
+  }
+
+  //  Calculate total price
+  const days =
+    (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+  const totalPrice = days * vehicle.daily_rent_price;
+
+  //  Insert booking
+  const bookingRes = await pool.query(`INSERT INTO bookings(customer_id, vehicle_id, rent_start_date, rent_end_date, total_price, status)VALUES ($1,$2,$3,$4,$5,'active')RETURNING *`,[user.id, vehicleId, startDate.toISOString(), endDate.toISOString(), totalPrice]  );
+
+  //  Update vehicle status to booked
   await pool.query(
-    `UPDATE vehicles SET availability_status='available', updated_at=NOW() WHERE id=$1`,
-    [booking.rows[0].vehicle_id]
+    `UPDATE vehicles SET availability_status='booked' WHERE id=$1`,
+    [vehicleId]
   );
 
-  return updatedBooking.rows[0];
+  return bookingRes.rows[0];
 };
- 
 
-export const bookingsServices={
+export const bookingsServices = {
   createBooking,
-  getBookings,
-  getSingleBooking,
-  updateBookingStatus,
-//   deletebookings,
-
-}
- 
+  // getBookings,
+  // getSingleBooking,
+  // updateBookingStatus,
+  // deleteBookings,
+};
