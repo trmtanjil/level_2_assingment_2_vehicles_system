@@ -68,10 +68,76 @@ console.log(vehicle)
   return bookingRes.rows[0];
 };
 
+
+const getBookings = async(user:any)=>{
+  if(user.role==="admin"){
+    //admin can see
+    const res = await pool.query(`SELECT * FROM bookings ORDER BY rent_start_date DESC`);
+    return res.rows
+  }else{
+    //customer can seee
+    const res = await pool.query(`SELECT * FROM booking WHERE customer_id=$1 ORDER BY rent_start_date DESC`,[user.id]);
+    return res.rows;
+  };
+   
+}
+
+
+
+const updateBookingStatus = async (user: any, bookingId: number, newStatus: string) => {
+  //  Booking check
+  const bookingRes = await pool.query(`SELECT * FROM bookings WHERE id=$1`, [bookingId]);
+  if (bookingRes.rows.length === 0) {
+    throw new Error("Booking not found");
+  }
+  const booking = bookingRes.rows[0];
+
+  //  Role-based rules
+  const now = new Date();
+  const rentStart = new Date(booking.rent_start_date);
+
+  if (user.role === "customer") {
+    // Customer can cancel before start date only
+    if (booking.customer_id !== user.id) {
+      throw new Error("You are not allowed to cancel this booking");
+    }
+    if (now >= rentStart) {
+      throw new Error("Cannot cancel after rental start date");
+    }
+    if (newStatus !== "cancelled") {
+      throw new Error("Customers can only cancel booking");
+    }
+  } else if (user.role === "admin") {
+    // Admin can mark as returned
+    if (newStatus !== "returned") {
+      throw new Error("Admin can only mark booking as returned");
+    }
+  } else {
+    throw new Error("Unauthorized");
+  }
+
+  //  Update booking status
+  await pool.query(
+    `UPDATE bookings SET status=$1 WHERE id=$2`,
+    [newStatus, bookingId]
+  );
+
+  //  Update vehicle availability if returned or cancelled
+  if (newStatus === "returned" || newStatus === "cancelled") {
+    await pool.query(
+      `UPDATE vehicles SET availability_status='available' WHERE id=$1`,
+      [booking.vehicle_id]
+    );
+  }
+
+  return { ...booking, status: newStatus };
+};
+
+
+
 export const bookingsServices = {
   createBooking,
-  // getBookings,
-  // getSingleBooking,
-  // updateBookingStatus,
-  // deleteBookings,
+  getBookings,
+   updateBookingStatus,
+
 };

@@ -7,9 +7,7 @@ const router =express.Router();
 
 //user crud
 router.post("/",auth("admin"),bookingsControllers.createBooking)
-// router.get("/",bookingsControllers.getBookings)
-// router.get("/:id",bookingsControllers.getSingleBooking)
-//  router.put("/:id",userControllers.updateUser)
-//  router.delete("/:id",userControllers.deleteUser)
-
+router.get("/",auth("admin", "customer"),bookingsControllers.getBookings)
+router.put("/:bookingId", auth("admin", "customer"), bookingsControllers.updateBookingController);
+ 
 export const bookingRouter = router
